@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>班级点名系统</title>
+    <style>
+        /* 全局字体设置为微软雅黑 */
+        * {
+            font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+        }
+
+        /* 确保所有元素都使用微软雅黑 */
+        .name-box,
+        .moving-name,
+        .selected-names .name-box,
+        .start-button,
+        .selected-container h3 {
+            font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(
+                135deg,
+                #87CEEB,  /* 天空蓝 */
+                #20B2AA,  /* 海水绿 */
+                #87CEEB,  /* 天空蓝 */
+                #20B2AA   /* 海水绿 */
+            );
+            background-size: 400% 400%;
+            animation: waves 15s ease infinite;
+            padding: 20px;
+        }
+
+        /* 添加波浪动画 */
+        @keyframes waves {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .name-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            max-width: 1200px;
+            margin: 0 auto;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .name-box {
+            background-color: rgba(255, 255, 255, 0.85);
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            min-width: 80px;
+            text-align: center;
+            width: 26px;
+            height: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            border-radius: 4px;
+        }
+
+        .name-box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            cursor: pointer;
+        }
+
+        .selected {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        /* 添加按钮样式 */
+        .start-button {
+            display: block;
+            margin: 20px auto;
+            padding: 15px 30px;
+            font-size: 18px;
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #185a9d;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            width: 53px;
+            height: 27px;
+            font-size: 14px;
+        }
+
+        .start-button:hover {
+            background-color: rgba(255, 255, 255, 1);
+        }
+
+        /* 添加闪烁动画效果 */
+        .highlight {
+            background-color: #ffeb3b;
+            transition: background-color 0.1s;
+        }
+
+        /* 修改星星样式 */
+        .star {
+            position: absolute;
+            color: gold;
+            font-size: 20px;
+            pointer-events: none;
+            animation: starFloat 0.8s ease-out forwards;
+        }
+
+        @keyframes starFloat {
+            0% {
+                transform: translate(0, 0) scale(0.5);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) scale(1.2);
+                opacity: 0;
+            }
+        }
+
+        /* 修改选中名单容器样式 */
+        .selected-container {
+            margin: 15px auto;
+            padding: 15px;
+            background-color: rgba(255, 255, 255, 0.85);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 1200px;
+        }
+
+        .selected-container h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .selected-names {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            min-height: 180px;
+            padding: 10px;
+        }
+
+        .selected-names .name-box {
+            margin: 0;
+            flex-shrink: 0;
+            width: 40px;
+            height: 20px;
+            font-size: 20px;
+        }
+
+        /* 添加移动动画样式 */
+        .moving-name {
+            position: fixed;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            pointer-events: none;
+            animation: moveToTarget 1s ease-in-out forwards;
+            width: 40px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        @keyframes moveToTarget {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* 调整控制面板样式 */
+        .control-panel {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin: 20px auto;
+            position: relative;
+            max-width: 1200px;
+            padding: 0 20px;
+        }
+
+        /* 数字输入框样式 */
+        .number-input {
+            width: 45px;
+            height: 40px;
+            padding: 0 5px;
+            border: 2px solid #4CAF50;
+            border-radius: 5px;
+            font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+            font-size: 16px;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.3s;
+            position: absolute;
+            left: 20px;
+        }
+
+        .number-input:focus {
+            border-color: #45a049;
+        }
+
+        /* 按钮样式保持不变 */
+        .start-button {
+            width: 80px;
+            height: 40px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .start-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="name-container">
+        <div class="name-box">陈浩墨</div>
+        <div class="name-box">陈建伟</div>
+        <div class="name-box">丁红丽</div>
+        <div class="name-box">丁玲玲</div>
+        <div class="name-box">顾琳</div>
+        <div class="name-box">顾晓亮</div>
+        <div class="name-box">郭富常</div>
+        <div class="name-box">海天宇</div>
+        <div class="name-box">海正国</div>
+        <div class="name-box">何乐为</div>
+        <div class="name-box">何楠</div>
+        <div class="name-box">贺梅</div>
+        <div class="name-box">贺穆伊</div>
+        <div class="name-box">黄天荣</div>
+        <div class="name-box">姬晓慧</div>
+        <div class="name-box">兰宇翔</div>
+        <div class="name-box">李晨</div>
+        <div class="name-box">李紫霈</div>
+        <div class="name-box">罗雯</div>
+        <div class="name-box">马博雅</div>
+        <div class="name-box">马国庆</div>
+        <div class="name-box">马辉</div>
+        <div class="name-box">马嘉诚</div>
+        <div class="name-box">马建国</div>
+        <div class="name-box">马进林</div>
+        <div class="name-box">马立克</div>
+        <div class="name-box">马林兵</div>
+        <div class="name-box">马玲</div>
+        <div class="name-box">马文静</div>
+        <div class="name-box">马晓兰</div>
+        <div class="name-box">马晓琴</div>
+        <div class="name-box">马行键</div>
+        <div class="name-box">马圆</div>
+        <div class="name-box">买宁</div>
+        <div class="name-box">邵彦</div>
+        <div class="name-box">锁文强</div>
+        <div class="name-box">田飞扬</div>
+        <div class="name-box">王金强</div>
+        <div class="name-box">王凯</div>
+        <div class="name-box">王晓勇</div>
+        <div class="name-box">王宇凡</div>
+        <div class="name-box">谢晨曦</div>
+        <div class="name-box">杨书之</div>
+        <div class="name-box">杨硕</div>
+        <div class="name-box">杨小娟</div>
+        <div class="name-box">杨雪艳</div>
+        <div class="name-box">杨亚菲</div>
+        <div class="name-box">杨燕子</div>
+        <div class="name-box">余昭</div>
+        <div class="name-box">张斌</div>
+        <div class="name-box">张承龙</div>
+        <div class="name-box">张嘉琦</div>
+        <div class="name-box">张霞</div>
+        <div class="name-box">张晓宇</div>
+        <div class="name-box">张轩</div>
+        <div class="name-box">周明曦</div>
+    </div>
+
+    <!-- 修改控制面板的HTML结构 -->
+    <div class="control-panel">
+        <button class="start-button">开始</button>
+        <input type="number" class="number-input" min="1" max="56" value="1" title="选择抽取人数">
+    </div>
+
+    <!-- 添加选中名单显示区域 -->
+    <div class="selected-container">
+        <h3>幸运儿</h3>
+        <div class="selected-names"></div>
+    </div>
+
+    <script>
+        const nameBoxes = document.querySelectorAll('.name-box');
+        const startButton = document.querySelector('.start-button');
+        const selectedNames = document.querySelector('.selected-names');
+        const numberInput = document.querySelector('.number-input');
+        let isSelecting = false;
+        let highlightInterval;
+
+        // 修改创建星星的函数
+        function createStar(x, y, angle) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.textContent = '⭐';
+            star.style.left = x + 'px';
+            star.style.top = y + 'px';
+
+            // 计算散开距离
+            const distance = 100;
+            const tx = Math.cos(angle) * distance;
+            const ty = Math.sin(angle) * distance;
+
+            // 设置运动方向
+            star.style.setProperty('--tx', `${tx}px`);
+            star.style.setProperty('--ty', `${ty}px`);
+
+            document.body.appendChild(star);
+            
+            // 动画结束后移除星星
+            setTimeout(() => {
+                star.remove();
+            }, 800);
+        }
+
+        // 修改生成多个星星的函数
+        function createStars(event, element) {
+            const rect = element.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            // 创建8颗星星，均匀分布在圆周上
+            const numStars = 8;
+            for (let i = 0; i < numStars; i++) {
+                // 计算每颗星星的角度
+                const angle = (i * 2 * Math.PI / numStars) + Math.random() * 0.5;
+                // 在起始位置添加一些随机偏移
+                const startOffsetX = (Math.random() - 0.5) * 20;
+                const startOffsetY = (Math.random() - 0.5) * 20;
+                createStar(centerX + startOffsetX, centerY + startOffsetY, angle);
+            }
+        }
+
+        // 修改点名函数以支持多人选择
+        function selectRandomName() {
+            if (isSelecting) return;
+            
+            const count = parseInt(numberInput.value) || 1;
+            const remainingNames = Array.from(nameBoxes).filter(box => !box.classList.contains('selected'));
+            const actualCount = Math.min(count, remainingNames.length);
+            
+            if (actualCount === 0) {
+                alert('已经没有可选的学生了！');
+                return;
+            }
+
+            isSelecting = true;
+            let lastHighlighted = null;
+            let counter = 0;
+            
+            // 清除所有高亮效果
+            nameBoxes.forEach(box => box.classList.remove('highlight'));
+            
+            highlightInterval = setInterval(() => {
+                if (lastHighlighted) {
+                    lastHighlighted.classList.remove('highlight');
+                }
+                
+                const availableNames = Array.from(nameBoxes).filter(box => !box.classList.contains('selected'));
+                const randomIndex = Math.floor(Math.random() * availableNames.length);
+                lastHighlighted = availableNames[randomIndex];
+                lastHighlighted.classList.add('highlight');
+                
+                counter++;
+                if (counter >= 10) { // 闪烁10次后停止
+                    clearInterval(highlightInterval);
+                    // 清除最后的高亮效果
+                    if (lastHighlighted) {
+                        lastHighlighted.classList.remove('highlight');
+                    }
+                    selectMultipleNames(actualCount);
+                }
+            }, 100);
+        }
+
+        // 添加多人选择函数
+        function selectMultipleNames(count) {
+            const availableNames = Array.from(nameBoxes).filter(box => !box.classList.contains('selected'));
+            const selectedIndices = new Set();
+            
+            // 随机选择指定数量的学生
+            while (selectedIndices.size < count) {
+                const randomIndex = Math.floor(Math.random() * availableNames.length);
+                if (!selectedIndices.has(randomIndex)) {
+                    selectedIndices.add(randomIndex);
+                    const selectedBox = availableNames[randomIndex];
+                    
+                    // 使用setTimeout创建延迟效果，使多个名字依次移动
+                    setTimeout(() => {
+                        finishSelection(selectedBox);
+                    }, (selectedIndices.size - 1) * 300); // 每个名字间隔300ms
+                }
+            }
+            
+            // 重置选择状态
+            setTimeout(() => {
+                isSelecting = false;
+            }, (count - 1) * 300 + 800); // 等待所有动画完成
+        }
+
+        function finishSelection(selectedBox) {
+            // 确保移除高亮效果
+            selectedBox.classList.remove('highlight');
+            selectedBox.classList.add('selected');
+
+            // 创建移动的克隆元素
+            const clone = selectedBox.cloneNode(true);
+            const originalRect = selectedBox.getBoundingClientRect();
+            const targetRect = selectedNames.getBoundingClientRect();
+
+            // 设置克隆元素的初始位置和样式
+            clone.classList.add('moving-name');
+            clone.style.left = `${originalRect.left}px`;
+            clone.style.top = `${originalRect.top}px`;
+            
+            // 计算目标位置
+            const tx = targetRect.left + targetRect.width/2 - originalRect.left - originalRect.width/2;
+            const ty = targetRect.top - originalRect.top + 20;
+            
+            clone.style.setProperty('--tx', `${tx}px`);
+            clone.style.setProperty('--ty', `${ty}px`);
+            
+            document.body.appendChild(clone);
+
+            // 动画结束后添加到选中区域
+            setTimeout(() => {
+                clone.remove();
+                const nameElement = document.createElement('div');
+                nameElement.className = 'name-box selected';
+                nameElement.textContent = selectedBox.textContent;
+                selectedNames.appendChild(nameElement);
+                isSelecting = false;
+            }, 1000);
+        }
+
+        startButton.addEventListener('click', selectRandomName);
+
+        // 保留星星效果的点击事件
+        nameBoxes.forEach(box => {
+            box.addEventListener('click', function(event) {
+                if (!isSelecting) {
+                    createStars(event, this);
+                }
+            });
+        });
+
+        // 监听窗口大小变化，更新位置
+        window.addEventListener('resize', () => {
+            updateSelectedNamesPositions();
+        });
+    </script>
+</body>
+</html>
