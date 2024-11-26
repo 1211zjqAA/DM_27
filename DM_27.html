@@ -120,6 +120,7 @@
             font-size: 20px;
             pointer-events: none;
             animation: starFloat 0.8s ease-out forwards;
+            z-index: 9999;
         }
 
         @keyframes starFloat {
@@ -342,43 +343,40 @@
         let isSelecting = false;
         let highlightInterval;
 
-        // 修改创建星星的函数
+        // 修改创建星星的函数，优化位置计算
         function createStar(x, y, angle) {
             const star = document.createElement('div');
             star.className = 'star';
             star.textContent = '⭐';
-            star.style.left = x + 'px';
-            star.style.top = y + 'px';
+            
+            // 使用 clientX 和 clientY 来确保正确的点击位置
+            star.style.left = (x - 10) + 'px';  // 微调位置
+            star.style.top = (y - 10) + 'px';   // 微调位置
 
             // 计算散开距离
             const distance = 100;
             const tx = Math.cos(angle) * distance;
             const ty = Math.sin(angle) * distance;
 
-            // 设置运动方向
             star.style.setProperty('--tx', `${tx}px`);
             star.style.setProperty('--ty', `${ty}px`);
 
             document.body.appendChild(star);
             
-            // 动画结束后移除星星
             setTimeout(() => {
                 star.remove();
             }, 800);
         }
 
-        // 修改生成多个星星的函数
+        // 修改生成多个星星的函数，使用事件坐标
         function createStars(event, element) {
             const rect = element.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
+            const centerX = event.clientX;  // 使用实际点击位置
+            const centerY = event.clientY;  // 使用实际点击位置
             
-            // 创建8颗星星，均匀分布在圆周上
             const numStars = 8;
             for (let i = 0; i < numStars; i++) {
-                // 计算每颗星星的角度
                 const angle = (i * 2 * Math.PI / numStars) + Math.random() * 0.5;
-                // 在起始位置添加一些随机偏移
                 const startOffsetX = (Math.random() - 0.5) * 20;
                 const startOffsetY = (Math.random() - 0.5) * 20;
                 createStar(centerX + startOffsetX, centerY + startOffsetY, angle);
@@ -394,7 +392,7 @@
             const actualCount = Math.min(count, remainingNames.length);
             
             if (actualCount === 0) {
-                alert('已经没有可选的学生了！');
+                alert('已经没有可选的学生��！');
                 return;
             }
 
@@ -489,17 +487,41 @@
 
         startButton.addEventListener('click', selectRandomName);
 
-        // 保留星星效果的点击事件
+        // 修改点击事件监听器，确保事件正确触发
         nameBoxes.forEach(box => {
             box.addEventListener('click', function(event) {
-                if (!isSelecting) {
+                if (!isSelecting && !this.classList.contains('selected')) {
+                    event.stopPropagation();  // 防止事件冒泡
                     createStars(event, this);
                 }
             });
         });
 
-        // 监听窗口大小变化，更新位置
+        // 添加更新选中名字位置的函数
+        function updateSelectedNamesPositions() {
+            const selectedNameBoxes = selectedNames.querySelectorAll('.name-box');
+            const containerRect = selectedNames.getBoundingClientRect();
+            
+            selectedNameBoxes.forEach(nameBox => {
+                // 重新计算每个名字框的位置
+                nameBox.style.position = 'relative';
+                nameBox.style.transition = 'all 0.3s ease';
+            });
+        }
+
+        // 监听窗口大小变化
         window.addEventListener('resize', () => {
+            // 添加防抖，避免频繁触发
+            if (window.resizeTimeout) {
+                clearTimeout(window.resizeTimeout);
+            }
+            window.resizeTimeout = setTimeout(() => {
+                updateSelectedNamesPositions();
+            }, 250);
+        });
+
+        // 页面加载完成后初始化位置
+        window.addEventListener('load', () => {
             updateSelectedNamesPositions();
         });
     </script>
